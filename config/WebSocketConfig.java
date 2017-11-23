@@ -1,46 +1,40 @@
 package com.mickl.messageservice.config;
 
-import com.mickl.messageservice.model.Event;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.reactive.HandlerMapping;
+import org.springframework.web.reactive.config.EnableWebFlux;
+import org.springframework.web.reactive.config.WebFluxConfigurationSupport;
 import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping;
 import org.springframework.web.reactive.socket.WebSocketHandler;
-import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.UnicastProcessor;
 
-import javax.annotation.PostConstruct;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class WebSocketConfig {
-    @Bean
-    public UnicastProcessor<Event> eventPublisher() {
-        return UnicastProcessor.create();
+@EnableWebFlux
+public class WebSocketConfig extends WebFluxConfigurationSupport {
+
+    private final WebSocketHandler webSocketHandler;
+
+    @Autowired
+    public WebSocketConfig(WebSocketHandler webSocketHandler) {
+        this.webSocketHandler = webSocketHandler;
     }
 
     @Bean
-    public Flux<Event> events(UnicastProcessor<Event> eventPublisher) {
-        return eventPublisher
-                .replay(25)
-                .autoConnect();
-    }
-
-    @Bean
-    public HandlerMapping webSocketMapping(UnicastProcessor<Event> eventPublisher, Flux<Event> events) {
+    @Primary
+    public HandlerMapping webSocketMapping() {
         Map<String, Object> map = new HashMap<>();
-        map.put("/websocket/messages", new MessageWebSocketHandler());
+        map.put("/websocket-messages", webSocketHandler);
 
-        SimpleUrlHandlerMapping simpleUrlHandlerMapping = new SimpleUrlHandlerMapping();
-        simpleUrlHandlerMapping.setUrlMap(map);
-        simpleUrlHandlerMapping.setOrder(10);
-
-        return simpleUrlHandlerMapping;
+        SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
+        mapping.setOrder(10);
+        mapping.setUrlMap(map);
+        return mapping;
     }
 
     @Bean
@@ -48,23 +42,5 @@ public class WebSocketConfig {
         return new WebSocketHandlerAdapter();
     }
 
-    private class MessageWebSocketHandler implements WebSocketHandler {
-
-        private Flux<Long> messageFlux;
-
-        @PostConstruct
-        private void init() {
-            messageFlux = Flux.interval(Duration.ofSeconds(1));
-        }
-
-        @Override
-        public Mono<Void> handle(WebSocketSession session) {
-            return session.send(
-                    messageFlux
-                            .map(l -> String.format("{ \"value\": %d }", l)) //transform to json
-                            .map(session::textMessage)); // map to Spring WebSocketMessage of type text
-        }
-
-    }
 
 }

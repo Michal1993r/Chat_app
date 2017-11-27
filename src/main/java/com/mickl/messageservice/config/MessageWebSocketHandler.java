@@ -2,9 +2,9 @@ package com.mickl.messageservice.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mickl.messageservice.MessageSubscriber;
 import com.mickl.messageservice.model.Message;
 import com.mickl.messageservice.repository.MessageRepository;
+import com.mickl.messageservice.subscriber.MessageSubscriber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
@@ -19,13 +19,14 @@ import java.io.IOException;
 public class MessageWebSocketHandler implements WebSocketHandler {
 
     private final MessageRepository messageRepository;
-    private ObjectMapper mapper = new ObjectMapper();
     private MessageSubscriber subscriber;
+    private ObjectMapper mapper;
 
     @Autowired
     public MessageWebSocketHandler(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
         this.subscriber = new MessageSubscriber(messageRepository);
+        this.messageRepository = messageRepository;
+        this.mapper = new ObjectMapper();
     }
 
     @Override
@@ -56,4 +57,5 @@ public class MessageWebSocketHandler implements WebSocketHandler {
             throw new RuntimeException("Invalid JSON:" + json, e);
         }
     }
+
 }

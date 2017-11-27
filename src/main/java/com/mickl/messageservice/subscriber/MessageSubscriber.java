@@ -1,4 +1,4 @@
-package com.mickl.messageservice;
+package com.mickl.messageservice.subscriber;
 
 import com.mickl.messageservice.model.Message;
 import com.mickl.messageservice.repository.MessageRepository;

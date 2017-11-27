@@ -5,6 +5,8 @@ import com.mickl.messageservice.repository.MessageRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.Valid;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Slf4j
 public class MessageSubscriber {
@@ -16,6 +18,7 @@ public class MessageSubscriber {
     }
 
     public void onNext(@Valid Message message) {
+        message.timestamp(Timestamp.valueOf(LocalDateTime.now()));
         messageRepository.save(message)
                 .subscribe();
     }
